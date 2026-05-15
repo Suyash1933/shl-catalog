@@ -86,7 +86,9 @@ def chat_endpoint(request: ChatRequest):
             end_of_conversation=result["end_of_conversation"],
         )
     except Exception as e:
+        import traceback
         print(f"[ERROR] Chat failed: {type(e).__name__}: {e}")
+        traceback.print_exc()
         # Ensure we always return valid schema even on errors
         return ChatResponse(
             reply="I'm sorry, I encountered an issue processing your request. Could you please rephrase your question about SHL assessments?",

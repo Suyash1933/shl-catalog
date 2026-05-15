@@ -251,6 +251,7 @@ def chat(messages: list[dict]) -> dict:
             raw = response.text
             break
         except Exception as e:
+            print(f"[Gemini Error] model={model_name} attempt={attempt+1}: {type(e).__name__}: {e}")
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                 wait = (attempt + 1) * 10
                 print(f"Rate limited, retrying in {wait}s...")
