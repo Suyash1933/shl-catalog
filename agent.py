@@ -1,30 +1,18 @@
 """
-Conversational agent — uses Gemini + FAISS retrieval to recommend SHL assessments.
+Conversational agent — uses LLM + FAISS retrieval to recommend SHL assessments.
+Supports Groq (default for deployment) and Gemini (local/fallback).
 """
 
 import json
 import os
 import re
-from google import genai
-from google.genai import types
+import time
 from dotenv import load_dotenv
 
 from retrieval import search_multi
 from catalog import load_catalog, TEST_TYPE_LABELS
 
 load_dotenv()
-
-_client: genai.Client | None = None
-
-
-def get_client() -> genai.Client:
-    global _client
-    if _client is None:
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY not set")
-        _client = genai.Client(api_key=api_key)
-    return _client
 
 
 SYSTEM_PROMPT = """\
@@ -69,14 +57,14 @@ You are an SHL Assessment Recommender. You help hiring managers and recruiters f
 
 ## RESPONSE FORMAT
 Respond with valid JSON only. No markdown fences, no extra text outside the JSON:
-{{
+{
   "reply": "Your conversational message to the user",
   "recommendations": [],
   "end_of_conversation": false
-}}
+}
 
 - "recommendations" is EMPTY [] when still gathering info or refusing off-topic requests.
-- "recommendations" has 1-10 items when ready: [{{"name": "exact name from catalog", "url": "exact url from catalog", "test_type": "primary type code"}}]
+- "recommendations" has 1-10 items when ready: [{"name": "exact name from catalog", "url": "exact url from catalog", "test_type": "primary type code"}]
   - test_type is the PRIMARY type letter: "K", "P", "A", "S", "C", "B", "D", or "E"
   - If an assessment has multiple types, use the most relevant one for the user's need
 - "end_of_conversation" is true ONLY when the user explicitly confirms they're satisfied or says goodbye.
@@ -84,6 +72,89 @@ Respond with valid JSON only. No markdown fences, no extra text outside the JSON
 ## CATALOG DATA
 {catalog_context}
 """
+
+
+def _get_llm_provider():
+    """Determine which LLM provider to use based on available env vars."""
+    if os.getenv("GROQ_API_KEY"):
+        return "groq"
+    if os.getenv("GEMINI_API_KEY"):
+        return "gemini"
+    raise ValueError("No LLM API key set. Set GROQ_API_KEY or GEMINI_API_KEY.")
+
+
+def _call_groq(system: str, messages: list[dict]) -> str:
+    """Call Groq API with Llama model."""
+    from groq import Groq
+
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+
+    groq_messages = [{"role": "system", "content": system}]
+    for msg in messages:
+        groq_messages.append({"role": msg["role"], "content": msg["content"]})
+
+    for attempt in range(3):
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=groq_messages,
+                temperature=0.2,
+                max_tokens=2048,
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            print(f"[Groq Error] model={model} attempt={attempt+1}: {type(e).__name__}: {e}")
+            if "429" in str(e) or "rate" in str(e).lower():
+                wait = (attempt + 1) * 5
+                print(f"Rate limited, retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
+    return None
+
+
+def _call_gemini(system: str, messages: list[dict]) -> str:
+    """Call Gemini API."""
+    from google import genai
+    from google.genai import types
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    client = genai.Client(api_key=api_key)
+    model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
+    # Need to escape braces for Gemini's format method was already handled
+    gemini_messages = []
+    for msg in messages:
+        role = "user" if msg["role"] == "user" else "model"
+        gemini_messages.append(
+            types.Content(
+                role=role,
+                parts=[types.Part.from_text(text=msg["content"])],
+            )
+        )
+
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=gemini_messages,
+                config=types.GenerateContentConfig(
+                    system_instruction=system,
+                    temperature=0.2,
+                    max_output_tokens=2048,
+                ),
+            )
+            return response.text
+        except Exception as e:
+            print(f"[Gemini Error] model={model_name} attempt={attempt+1}: {type(e).__name__}: {e}")
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                wait = (attempt + 1) * 10
+                print(f"Rate limited, retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
+    return None
 
 
 def _extract_search_queries(messages: list[dict]) -> list[str]:
@@ -94,15 +165,12 @@ def _extract_search_queries(messages: list[dict]) -> list[str]:
     if not user_texts:
         return queries
 
-    # Combined context query
     combined = " ".join(user_texts)
     queries.append(combined)
 
-    # Latest message as separate query
     if len(user_texts) > 1:
         queries.append(user_texts[-1])
 
-    # Extract specific skill/tech mentions for targeted search
     tech_pattern = r'\b(java|python|c\+\+|c#|\.net|javascript|react|angular|sql|aws|azure|devops|linux|html|css|node|ruby|scala|kotlin|php|swift|salesforce|sap|excel|power\s*bi|tableau|hadoop|spark|docker|kubernetes|machine\s*learning|data\s*science|cybersecurity|networking|accounting|finance)\b'
     role_pattern = r'\b(developer|engineer|manager|analyst|administrator|consultant|designer|architect|lead|director|executive|supervisor|graduate|intern|customer\s*service|sales|marketing|hr|human\s*resources)\b'
 
@@ -114,7 +182,6 @@ def _extract_search_queries(messages: list[dict]) -> list[str]:
         if roles:
             queries.append(" ".join(roles) + " assessment hiring")
 
-    # Add queries for assessment types mentioned
     type_queries = {
         r'\b(personality|behavioral|behaviour|opq)\b': "personality behavioral assessment OPQ",
         r'\b(cognitive|reasoning|numerical|verbal|ability|aptitude)\b': "cognitive ability reasoning verify",
@@ -126,7 +193,7 @@ def _extract_search_queries(messages: list[dict]) -> list[str]:
         if re.search(pattern, combined, re.I):
             queries.append(query)
 
-    return queries[:5]  # cap at 5 queries
+    return queries[:5]
 
 
 def _build_catalog_context(messages: list[dict]) -> str:
@@ -148,7 +215,6 @@ def _build_catalog_context(messages: list[dict]) -> str:
         )
         desc = item.get("description", "")
         if desc:
-            # Truncate long descriptions
             desc = desc[:300]
         else:
             desc = "No description available"
@@ -174,14 +240,12 @@ def _extract_json(text: str) -> dict:
     """Extract JSON from the LLM response, handling markdown fences and noise."""
     text = text.strip()
 
-    # Try direct parse
     if text.startswith("{"):
         try:
             return json.loads(text)
         except json.JSONDecodeError:
             pass
 
-    # Try extracting from markdown code block
     match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
     if match:
         try:
@@ -189,7 +253,6 @@ def _extract_json(text: str) -> dict:
         except json.JSONDecodeError:
             pass
 
-    # Try finding first { to last }
     start = text.find("{")
     end = text.rfind("}")
     if start != -1 and end != -1:
@@ -198,7 +261,6 @@ def _extract_json(text: str) -> dict:
         except json.JSONDecodeError:
             pass
 
-    # Fallback
     return {
         "reply": text,
         "recommendations": [],
@@ -209,55 +271,18 @@ def _extract_json(text: str) -> dict:
 def chat(messages: list[dict]) -> dict:
     """
     Process a conversation and return the agent's response.
-
-    Args:
-        messages: List of {"role": "user"|"assistant", "content": "..."} dicts
-
-    Returns:
-        {"reply": str, "recommendations": list, "end_of_conversation": bool}
     """
-    client = get_client()
-
-    # Build catalog context from retrieval
     catalog_context = _build_catalog_context(messages)
-    system = SYSTEM_PROMPT.format(catalog_context=catalog_context)
+    system = SYSTEM_PROMPT.replace("{catalog_context}", catalog_context)
 
-    # Convert messages to Gemini format
-    gemini_messages = []
-    for msg in messages:
-        role = "user" if msg["role"] == "user" else "model"
-        gemini_messages.append(
-            types.Content(
-                role=role,
-                parts=[types.Part.from_text(text=msg["content"])],
-            )
-        )
+    # Call LLM
+    provider = _get_llm_provider()
+    print(f"[Agent] Using {provider} provider")
 
-    # Retry with backoff for rate limiting
-    import time
-    model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-    raw = None
-    for attempt in range(3):
-        try:
-            response = client.models.generate_content(
-                model=model_name,
-                contents=gemini_messages,
-                config=types.GenerateContentConfig(
-                    system_instruction=system,
-                    temperature=0.2,
-                    max_output_tokens=2048,
-                ),
-            )
-            raw = response.text
-            break
-        except Exception as e:
-            print(f"[Gemini Error] model={model_name} attempt={attempt+1}: {type(e).__name__}: {e}")
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                wait = (attempt + 1) * 10
-                print(f"Rate limited, retrying in {wait}s...")
-                time.sleep(wait)
-            else:
-                raise
+    if provider == "groq":
+        raw = _call_groq(system, messages)
+    else:
+        raw = _call_gemini(system, messages)
 
     if raw is None:
         return {
@@ -265,6 +290,7 @@ def chat(messages: list[dict]) -> dict:
             "recommendations": [],
             "end_of_conversation": False,
         }
+
     result = _extract_json(raw)
 
     # Validate and normalize
@@ -285,7 +311,6 @@ def chat(messages: list[dict]) -> dict:
         url = rec.get("url", "")
         if url in valid_urls and url not in seen_urls:
             seen_urls.add(url)
-            # Use canonical name from catalog
             canonical = url_to_item[url]
             test_type = rec.get("test_type", "")
             if not test_type and canonical.get("test_type"):
@@ -296,7 +321,6 @@ def chat(messages: list[dict]) -> dict:
                 "test_type": test_type,
             })
 
-    # Cap at 10
     validated_recs = validated_recs[:10]
 
     return {
