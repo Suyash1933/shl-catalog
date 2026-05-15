@@ -235,7 +235,7 @@ def chat(messages: list[dict]) -> dict:
 
     # Retry with backoff for rate limiting
     import time
-    model_name = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
+    model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     raw = None
     for attempt in range(3):
         try:
