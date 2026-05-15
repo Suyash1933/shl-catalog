@@ -55,6 +55,19 @@ class ChatResponse(BaseModel):
 
 # --- Endpoints ---
 
+@app.get("/")
+def root():
+    return {
+        "service": "SHL Assessment Recommender",
+        "endpoints": {
+            "health": "GET /health",
+            "chat": "POST /chat"
+        },
+        "usage": "Send a POST request to /chat with {\"messages\": [{\"role\": \"user\", \"content\": \"your message\"}]}",
+        "status": "running"
+    }
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
