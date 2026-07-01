@@ -1,0 +1,19 @@
+{
+  "persona": "Talent acquisition specialist hiring fresh graduates for a general business rotational program",
+  "initial_message": "We're hiring graduates for our rotational program. Need cognitive and personality assessments",
+  "facts": {
+    "role": "Graduate / rotational program",
+    "seniority": "Entry-level / fresh graduate",
+    "skills": "general cognitive ability, learning agility, numerical and verbal reasoning",
+    "test_preferences": "Cognitive ability tests and personality",
+    "remote": "remote testing needed"
+  },
+  "expected_assessments": [
+    "Graduate Scenarios",
+    "Verify - Numerical Ability",
+    "Verify - Verbal Ability - Next Generation",
+    "SHL Verify Interactive G+",
+    "Occupational Personality Questionnaire OPQ32r",
+    "SHL Verify Interactive - Inductive Reasoning"
+  ]
+}

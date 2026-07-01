@@ -1,0 +1,19 @@
+{
+  "persona": "Recruiter hiring a .NET full-stack developer",
+  "initial_message": "I'm looking for assessments for a .NET developer role. The person would work on MVC and WPF applications",
+  "facts": {
+    "role": ".NET Developer",
+    "seniority": "Mid-level",
+    "skills": ".NET Framework, MVC, WPF, C#, SQL",
+    "test_preferences": "knowledge and coding tests",
+    "remote": "no preference"
+  },
+  "expected_assessments": [
+    ".NET Framework 4.5",
+    ".NET MVC (New)",
+    ".NET WPF (New)",
+    "C# Programming (New)",
+    "SQL Server (New)",
+    "Automata (New)"
+  ]
+}

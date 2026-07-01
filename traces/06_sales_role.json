@@ -1,0 +1,19 @@
+{
+  "persona": "Hiring manager for a retail sales and service position",
+  "initial_message": "Looking for assessments for retail sales positions. We need people who are good with customers and can upsell",
+  "facts": {
+    "role": "Retail sales associate",
+    "seniority": "Entry to mid level",
+    "skills": "customer interaction, selling, product knowledge, communication",
+    "test_preferences": "simulation and personality",
+    "remote": "no preference"
+  },
+  "expected_assessments": [
+    "Retail Sales and Service Simulation",
+    "Sales & Service Phone Simulation",
+    "Sales & Service Phone Solution",
+    "Entry Level Sales Solution",
+    "Occupational Personality Questionnaire OPQ32r",
+    "OPQ MQ Sales Report"
+  ]
+}

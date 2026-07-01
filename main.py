@@ -73,6 +73,7 @@ def health():
     return {"status": "ok"}
 
 
+
 @app.post("/chat", response_model=ChatResponse)
 def chat_endpoint(request: ChatRequest):
     messages = [{"role": m.role, "content": m.content} for m in request.messages]

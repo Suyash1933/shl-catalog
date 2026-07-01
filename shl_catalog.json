@@ -12,7 +12,7 @@
     ],
     "remote_testing": true,
     "adaptive_irt": true,
-    "description": "",
+    "description": "Comprehensive multi-assessment report covering ability, competency, personality, biodata, development, and assessment experience. Provides holistic skills development insights for candidates across multiple dimensions.",
     "duration": ""
   },
   {
@@ -23,7 +23,7 @@
     ],
     "remote_testing": false,
     "adaptive_irt": false,
-    "description": "",
+    "description": "Knowledge test assessing proficiency in Microsoft .NET Framework 4.5, including CLR, assemblies, LINQ, WCF, WPF, and core framework concepts for software developers.",
     "duration": ""
   },
   {
@@ -34,7 +34,7 @@
     ],
     "remote_testing": false,
     "adaptive_irt": false,
-    "description": "",
+    "description": "Knowledge test evaluating skills in ASP.NET MVC architecture, including controllers, views, routing, model binding, and web application development patterns.",
     "duration": ""
   },
   {
@@ -45,7 +45,7 @@
     ],
     "remote_testing": false,
     "adaptive_irt": false,
-    "description": "",
+    "description": "Knowledge test covering the Model-View-ViewModel (MVVM) design pattern in .NET, including data binding, commands, view models, and WPF/Xamarin application architecture.",
     "duration": ""
   },
   {
@@ -56,7 +56,7 @@
     ],
     "remote_testing": false,
     "adaptive_irt": false,
-    "description": "",
+    "description": "Knowledge test assessing Windows Communication Foundation (WCF) skills, including service contracts, data contracts, bindings, hosting, and distributed application development.",
     "duration": ""
   },
   {
@@ -67,7 +67,7 @@
     ],
     "remote_testing": false,
     "adaptive_irt": false,
-    "description": "",
+    "description": "Knowledge test evaluating Windows Presentation Foundation (WPF) skills, including XAML, data binding, styles, templates, controls, and desktop application UI development.",
     "duration": ""
   },
   {
@@ -78,7 +78,7 @@
     ],
     "remote_testing": false,
     "adaptive_irt": false,
-    "description": "",
+    "description": "Knowledge test covering XAML (Extensible Application Markup Language) proficiency for .NET UI development, including layout, styling, data binding, and resource management.",
     "duration": ""
   },
   {
@@ -89,7 +89,7 @@
     ],
     "remote_testing": false,
     "adaptive_irt": false,
-    "description": "",
+    "description": "Knowledge test assessing accounts payable skills including invoice processing, payment procedures, vendor management, reconciliation, and financial accounting principles.",
     "duration": ""
   },
   {
@@ -112,7 +112,7 @@
     ],
     "remote_testing": false,
     "adaptive_irt": false,
-    "description": "",
+    "description": "Knowledge test evaluating accounts receivable skills including billing, collections, credit management, cash application, and revenue recognition procedures.",
     "duration": ""
   },
   {

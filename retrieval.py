@@ -4,6 +4,7 @@ Retrieval layer — FAISS semantic search + keyword boosting over SHL catalog.
 
 import json
 import re
+import threading
 import numpy as np
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
@@ -15,6 +16,7 @@ INDEX_DIR = Path(__file__).parent / "faiss_index"
 INDEX_PATH = INDEX_DIR / "index.faiss"
 IDS_PATH = INDEX_DIR / "ids.json"
 
+_lock = threading.Lock()
 _model: SentenceTransformer | None = None
 _index: faiss.IndexFlatIP | None = None
 _catalog: list[dict] | None = None
@@ -23,7 +25,9 @@ _catalog: list[dict] | None = None
 def get_model() -> SentenceTransformer:
     global _model
     if _model is None:
-        _model = SentenceTransformer("all-MiniLM-L6-v2")
+        with _lock:
+            if _model is None:  # double-check after acquiring lock
+                _model = SentenceTransformer("all-MiniLM-L6-v2")
     return _model
 
 
@@ -54,13 +58,18 @@ def load_index() -> tuple[faiss.IndexFlatIP, list[dict]]:
     if _index is not None and _catalog is not None:
         return _index, _catalog
 
-    if not INDEX_PATH.exists():
-        print("Index not found — building...")
-        build_index()
+    with _lock:
+        # Double-check after acquiring lock
+        if _index is not None and _catalog is not None:
+            return _index, _catalog
 
-    _index = faiss.read_index(str(INDEX_PATH))
-    _catalog = load_catalog()
-    return _index, _catalog
+        if not INDEX_PATH.exists():
+            print("Index not found — building...")
+            build_index()
+
+        _index = faiss.read_index(str(INDEX_PATH))
+        _catalog = load_catalog()
+        return _index, _catalog
 
 
 def _keyword_score(item: dict, query: str) -> float:

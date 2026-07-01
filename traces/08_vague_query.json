@@ -1,0 +1,18 @@
+{
+  "persona": "User with a very vague initial request who gradually provides more context",
+  "initial_message": "I need an assessment",
+  "facts": {
+    "role": "accountant",
+    "seniority": "entry-level",
+    "skills": "accounting, bookkeeping, Excel, financial reporting",
+    "test_preferences": "no preference",
+    "remote": "no preference"
+  },
+  "expected_assessments": [
+    "Accounts Payable (New)",
+    "Accounts Receivable (New)",
+    "Accounts Payable Simulation (New)",
+    "Accounts Receivable Simulation (New)",
+    "MS Excel (New)"
+  ]
+}

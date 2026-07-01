@@ -1,0 +1,18 @@
+{
+  "persona": "Tech lead hiring a Python data engineer",
+  "initial_message": "I need to hire a Python data engineer. They'll work with SQL, data pipelines, and some cloud infrastructure",
+  "facts": {
+    "role": "Data Engineer",
+    "seniority": "Mid to senior level",
+    "skills": "Python, SQL, data pipelines, AWS or Azure, ETL",
+    "test_preferences": "Technical knowledge tests mainly",
+    "remote": "yes"
+  },
+  "expected_assessments": [
+    "Python (New)",
+    "SQL Server (New)",
+    "Automata - SQL (New)",
+    "Automata Data Science (New)",
+    "Amazon Web Services (AWS) Development (New)"
+  ]
+}

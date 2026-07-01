@@ -1,0 +1,21 @@
+{
+  "persona": "User who starts with technical tests then asks to add personality assessments",
+  "initial_message": "I need coding tests for a JavaScript frontend developer",
+  "facts": {
+    "role": "Frontend developer",
+    "seniority": "mid-level",
+    "skills": "JavaScript, React, Angular, HTML, CSS",
+    "test_preferences": "Initially just coding, then also personality",
+    "refinement_message": "Actually, also add some personality assessments to the list",
+    "remote": "no preference"
+  },
+  "expected_assessments": [
+    "JavaScript (New)",
+    "HTML5 (New)",
+    "CSS3 (New)",
+    "ReactJS (New)",
+    "AngularJS (New)",
+    "Automata Front End",
+    "Occupational Personality Questionnaire OPQ32r"
+  ]
+}

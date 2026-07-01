@@ -1,0 +1,18 @@
+{
+  "persona": "Recruiter hiring entry-level customer service representatives",
+  "initial_message": "We need to assess candidates for a customer service role in a contact center",
+  "facts": {
+    "role": "Customer service representative",
+    "seniority": "Entry-level",
+    "skills": "phone communication, problem solving, empathy, data entry",
+    "test_preferences": "Simulation and situational judgment preferred",
+    "remote": "no preference"
+  },
+  "expected_assessments": [
+    "Customer Service Phone Simulation",
+    "Customer Service Phone Solution",
+    "Entry Level Customer Serv-Retail & Contact Center",
+    "Entry Level Customer Service (General) Solution",
+    "Occupational Personality Questionnaire OPQ32r"
+  ]
+}

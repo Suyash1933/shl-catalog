@@ -1,0 +1,20 @@
+{
+  "persona": "Hiring manager looking for a mid-level Java developer with stakeholder interaction skills",
+  "initial_message": "I'm hiring a Java developer who needs to work with stakeholders",
+  "facts": {
+    "role": "Java developer",
+    "seniority": "Mid-level, around 4 years experience",
+    "skills": "Core Java, Java EE, SQL, REST APIs",
+    "soft_skills": "stakeholder management, communication",
+    "test_preferences": "Technical knowledge tests and personality assessment",
+    "remote": "no preference"
+  },
+  "expected_assessments": [
+    "Java 8 (New)",
+    "Core Java (Entry Level) (New)",
+    "Core Java (Advanced Level) (New)",
+    "Occupational Personality Questionnaire OPQ32r",
+    "Automata - SQL (New)",
+    "SQL Server (New)"
+  ]
+}

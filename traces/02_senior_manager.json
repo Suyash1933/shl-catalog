@@ -1,0 +1,19 @@
+{
+  "persona": "HR recruiter hiring a senior leadership/manager role",
+  "initial_message": "I need assessments for a senior management position focused on leadership and team management",
+  "facts": {
+    "role": "Senior Manager",
+    "seniority": "Senior, 10+ years",
+    "skills": "leadership, strategic thinking, team management, decision making",
+    "test_preferences": "Personality and leadership assessments",
+    "remote": "yes, remote testing preferred"
+  },
+  "expected_assessments": [
+    "Occupational Personality Questionnaire OPQ32r",
+    "OPQ Leadership Report",
+    "Enterprise Leadership Report 1.0",
+    "Enterprise Leadership Report 2.0",
+    "OPQ Manager Plus Report",
+    "Executive Scenarios"
+  ]
+}

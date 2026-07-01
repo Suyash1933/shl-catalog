@@ -1,0 +1,14 @@
+{
+  "persona": "User who asks to compare two assessment products",
+  "initial_message": "What is the difference between OPQ32r and the Global Skills Assessment? I'm trying to decide which to use for a managerial hire",
+  "facts": {
+    "role": "Manager",
+    "seniority": "senior",
+    "context": "Comparing personality vs competency assessment for a managerial role",
+    "test_preferences": "wants to understand differences before choosing"
+  },
+  "expected_assessments": [
+    "Occupational Personality Questionnaire OPQ32r",
+    "Global Skills Assessment"
+  ]
+}

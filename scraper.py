@@ -4,16 +4,34 @@ Fetches all pages and optionally enriches with detail page descriptions.
 """
 
 import json
+import logging
 import re
 import time
 import requests
 from bs4 import BeautifulSoup
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://www.shl.com/products/product-catalog/"
 DETAIL_BASE = "https://www.shl.com"
 OUTPUT_PATH = Path(__file__).parent / "shl_catalog.json"
+
+
+def _get_session() -> requests.Session:
+    """Create a requests session with retry logic."""
+    session = requests.Session()
+    retry = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    })
+    return session
 
 # Test type mapping from table header icons/classes
 TYPE_MAP = {
@@ -28,13 +46,11 @@ TYPE_MAP = {
 }
 
 
-def fetch_page(start: int = 0) -> str:
+def fetch_page(start: int = 0, session: requests.Session | None = None) -> str:
     """Fetch a single catalog page."""
     params = {"start": start, "type": 1}  # type=1 = Individual Test Solutions
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    }
-    resp = requests.get(BASE_URL, params=params, headers=headers, timeout=30)
+    s = session or _get_session()
+    resp = s.get(BASE_URL, params=params, timeout=30)
     resp.raise_for_status()
     return resp.text
 
@@ -96,13 +112,11 @@ def parse_catalog_page(html: str) -> list[dict]:
     return items
 
 
-def fetch_detail_page(url: str) -> dict:
+def fetch_detail_page(url: str, session: requests.Session | None = None) -> dict:
     """Fetch a detail page and extract description + duration."""
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    }
+    s = session or _get_session()
     try:
-        resp = requests.get(url, headers=headers, timeout=15)
+        resp = s.get(url, timeout=15)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
 
@@ -134,33 +148,49 @@ def fetch_detail_page(url: str) -> dict:
 def scrape_all_pages() -> list[dict]:
     """Scrape all catalog pages."""
     all_items = []
+    seen_urls = set()
     page = 0
+    consecutive_errors = 0
+    session = _get_session()
+
     while True:
         start = page * 12
-        print(f"Fetching page {page + 1} (start={start})...")
+        logger.info(f"Fetching page {page + 1} (start={start})...")
         try:
-            html = fetch_page(start)
+            html = fetch_page(start, session=session)
             items = parse_catalog_page(html)
             if not items:
-                print(f"  No items on page {page + 1}, stopping.")
+                logger.info(f"  No items on page {page + 1}, stopping.")
                 break
-            all_items.extend(items)
-            print(f"  Found {len(items)} items (total: {len(all_items)})")
+            # Deduplicate by URL
+            new_items = []
+            for item in items:
+                if item["url"] not in seen_urls:
+                    seen_urls.add(item["url"])
+                    new_items.append(item)
+            all_items.extend(new_items)
+            logger.info(f"  Found {len(new_items)} new items (total: {len(all_items)})")
             page += 1
+            consecutive_errors = 0
             time.sleep(0.5)  # Be polite
         except Exception as e:
-            print(f"  Error on page {page + 1}: {e}")
-            break
+            consecutive_errors += 1
+            logger.error(f"  Error on page {page + 1}: {e}")
+            if consecutive_errors >= 3:
+                logger.error("  Too many consecutive errors, stopping.")
+                break
+            time.sleep(2)  # Wait before retrying
 
     return all_items
 
 
 def enrich_with_details(catalog: list[dict], max_workers: int = 5) -> list[dict]:
     """Fetch detail pages to add descriptions."""
-    print(f"\nEnriching {len(catalog)} items with detail page data...")
+    logger.info(f"Enriching {len(catalog)} items with detail page data...")
+    session = _get_session()
 
     def _enrich(item):
-        details = fetch_detail_page(item["url"])
+        details = fetch_detail_page(item["url"], session=session)
         item["description"] = details["description"]
         item["duration"] = details["duration"]
         return item
@@ -171,7 +201,7 @@ def enrich_with_details(catalog: list[dict], max_workers: int = 5) -> list[dict]
         for future in as_completed(futures):
             done += 1
             if done % 20 == 0:
-                print(f"  Enriched {done}/{len(catalog)}")
+                logger.info(f"  Enriched {done}/{len(catalog)}")
 
     return catalog
 

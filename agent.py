@@ -74,13 +74,16 @@ Respond with valid JSON only. No markdown fences, no extra text outside the JSON
 """
 
 
-def _get_llm_provider():
-    """Determine which LLM provider to use based on available env vars."""
+def _get_llm_providers() -> list[str]:
+    """Return available LLM providers in priority order."""
+    providers = []
     if os.getenv("GROQ_API_KEY"):
-        return "groq"
+        providers.append("groq")
     if os.getenv("GEMINI_API_KEY"):
-        return "gemini"
-    raise ValueError("No LLM API key set. Set GROQ_API_KEY or GEMINI_API_KEY.")
+        providers.append("gemini")
+    if not providers:
+        raise ValueError("No LLM API key set. Set GROQ_API_KEY or GEMINI_API_KEY.")
+    return providers
 
 
 def _call_groq(system: str, messages: list[dict]) -> str:
@@ -110,7 +113,9 @@ def _call_groq(system: str, messages: list[dict]) -> str:
                 print(f"Rate limited, retrying in {wait}s...")
                 time.sleep(wait)
             else:
-                raise
+                # Non-rate-limit error — break to allow fallback to another provider
+                print(f"[Groq] Non-retryable error, will try fallback provider")
+                return None
     return None
 
 
@@ -153,7 +158,8 @@ def _call_gemini(system: str, messages: list[dict]) -> str:
                 print(f"Rate limited, retrying in {wait}s...")
                 time.sleep(wait)
             else:
-                raise
+                print(f"[Gemini] Non-retryable error, will try fallback provider")
+                return None
     return None
 
 
@@ -275,14 +281,18 @@ def chat(messages: list[dict]) -> dict:
     catalog_context = _build_catalog_context(messages)
     system = SYSTEM_PROMPT.replace("{catalog_context}", catalog_context)
 
-    # Call LLM
-    provider = _get_llm_provider()
-    print(f"[Agent] Using {provider} provider")
-
-    if provider == "groq":
-        raw = _call_groq(system, messages)
-    else:
-        raw = _call_gemini(system, messages)
+    # Call LLM with fallback across providers
+    providers = _get_llm_providers()
+    raw = None
+    for provider in providers:
+        print(f"[Agent] Trying {provider} provider")
+        if provider == "groq":
+            raw = _call_groq(system, messages)
+        else:
+            raw = _call_gemini(system, messages)
+        if raw is not None:
+            break
+        print(f"[Agent] {provider} failed, trying next provider...")
 
     if raw is None:
         return {
